@@ -4,8 +4,6 @@ use ratatui::{
     widgets::{Block, List, ListItem, ListState, Paragraph, Widget},
 };
 
-use crate::utils::center_area;
-
 use super::CenteredText;
 
 pub enum TodoItemStatus {
@@ -74,10 +72,11 @@ impl TodoList {
         self.items.push(item);
     }
 
-    pub fn delete_selected(&mut self) {
+    pub fn delete_selected(&mut self) -> Option<TodoItem> {
         if let Some(i) = self.widget_state.selected() {
-            self.items.remove(i);
+            return Some(self.items.remove(i));
         }
+        None
     }
 
     pub fn toggle_current_item_status(&mut self) {
@@ -134,6 +133,15 @@ impl Widget for &mut TodoList {
             self.empty_todo_list_view(area, buf);
         } else {
             self.todo_list_view(area, buf);
+        }
+    }
+}
+
+impl std::fmt::Display for TodoItemStatus {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            TodoItemStatus::Complete => write!(f, "complete"),
+            TodoItemStatus::InProgress => write!(f, "in progress"),
         }
     }
 }

@@ -1,13 +1,16 @@
 use anyhow::Context;
 use ratatui::{
-    crossterm::event::{read, Event, KeyCode, KeyEventKind},
+    crossterm::event::{poll, read, Event, KeyCode, KeyEventKind},
     layout::Layout,
     prelude::*,
-    widgets::{Block, BorderType, Borders, Padding, Paragraph, Widget},
+    widgets::{Block, Borders, Padding, Paragraph, Widget},
     Terminal,
 };
+use std::time::Duration;
 
-use crate::widgets::{CenteredText, TodoItem, TodoList};
+use crate::widgets::{
+    CenteredText, Notification, NotificationLevel, NotificationStack, TodoItem, TodoList,
+};
 
 #[derive(Default, PartialEq)]
 pub enum ApplicationState {
@@ -35,6 +38,7 @@ pub struct Application {
     running_state: ApplicationState,
     input_state: ApplicationInputState,
     view: ApplicationView,
+    notifications: NotificationStack,
     todo_list: TodoList,
 }
 
@@ -77,9 +81,11 @@ impl Application {
     }
 
     fn handle_input_events(&mut self) -> anyhow::Result<()> {
-        if let Event::Key(key_event) = read().context("couldn't read input key event")? {
-            if key_event.kind == KeyEventKind::Press {
-                self.handle_key_event(key_event.code);
+        if poll(Duration::from_millis(250))? {
+            if let Event::Key(key_event) = read().context("couldn't read input key event")? {
+                if key_event.kind == KeyEventKind::Press {
+                    self.handle_key_event(key_event.code);
+                }
             }
         }
         Ok(())
@@ -91,8 +97,20 @@ impl Application {
                 KeyCode::Char('q') | KeyCode::Esc => self.running_state = ApplicationState::Exiting,
                 KeyCode::Char('j') | KeyCode::Down => self.todo_list.select_next(),
                 KeyCode::Char('k') | KeyCode::Up => self.todo_list.select_prev(),
+                KeyCode::Char('d') | KeyCode::Delete => match self.todo_list.delete_selected() {
+                    Some(item) => self.notifications.push_notification(Notification::new(
+                        format!("deleted  `{}`", item.title()),
+                        format!(
+                            "deleted item `{}` from todo list with status {}",
+                            item.title(),
+                            item.status()
+                        ),
+                        Duration::from_secs(7),
+                        NotificationLevel::Warn,
+                    )),
+                    None => {}
+                },
                 KeyCode::Char('n') => self.view = ApplicationView::TodoItemAdd,
-                KeyCode::Char('d') | KeyCode::Delete => self.todo_list.delete_selected(),
                 KeyCode::Enter | KeyCode::Tab => self.todo_list.toggle_current_item_status(),
                 _ => {}
             },
@@ -157,6 +175,12 @@ impl Widget for &mut Application {
         match self.view {
             ApplicationView::TodoListView => self.render_list_view(area, buf),
             ApplicationView::TodoItemAdd => self.render_item_add_view(area, buf),
+        }
+
+        if !self.notifications.is_empty() {
+            let right_half = Layout::horizontal([Constraint::Percentage(50); 2]).split(area)[1];
+            self.notifications.cleanup();
+            self.notifications.render(right_half, buf);
         }
     }
 }
