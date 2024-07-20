@@ -1,7 +1,7 @@
 use anyhow::Context;
 use ratatui::{
     prelude::*,
-    widgets::{Block, List, ListItem, ListState, Paragraph, Widget},
+    widgets::{Block, List, ListItem, ListState, Widget},
 };
 
 use super::CenteredText;
@@ -100,13 +100,13 @@ impl TodoList {
                     Span::styled("complete   ", Style::default().light_green())
                 }
             };
-            let line = Line::from(vec![
+            let item_line = Line::from(vec![
                 prefix,
                 Span::from(" | "),
                 Span::from(format!("(#{}) ", i.to_string())).light_cyan(),
                 Span::from(item.title()),
             ]);
-            ListItem::new(line).style(TodoList::alternate_color(i))
+            ListItem::new(item_line).style(TodoList::alternate_color(i))
         });
         let list = List::new(items)
             .highlight_symbol("> ")

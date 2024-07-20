@@ -99,7 +99,7 @@ impl Application {
                 KeyCode::Char('k') | KeyCode::Up => self.todo_list.select_prev(),
                 KeyCode::Char('d') | KeyCode::Delete => match self.todo_list.delete_selected() {
                     Some(item) => self.notifications.push_notification(Notification::new(
-                        format!("deleted  `{}`", item.title()),
+                        " deleted item ".into(),
                         format!(
                             "deleted item `{}` from todo list with status {}",
                             item.title(),
@@ -146,7 +146,8 @@ impl Application {
             Some(item) => {
                 let inner_block = Block::bordered()
                     .padding(Padding::horizontal(1))
-                    .border_style(Style::default().light_blue());
+                    .border_style(Style::default().light_blue())
+                    .on_black();
                 let inner_area = Layout::default()
                     .vertical_margin(1)
                     .horizontal_margin(5)
@@ -178,9 +179,7 @@ impl Widget for &mut Application {
         }
 
         if !self.notifications.is_empty() {
-            let right_half = Layout::horizontal([Constraint::Percentage(50); 2]).split(area)[1];
-            self.notifications.cleanup();
-            self.notifications.render(right_half, buf);
+            self.notifications.render(area, buf);
         }
     }
 }

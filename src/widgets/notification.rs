@@ -7,8 +7,6 @@ use std::{
     time::{Duration, Instant},
 };
 
-const MAX_NOTIFICATIONS: u32 = 7;
-
 #[derive(Default, Clone)]
 pub enum NotificationLevel {
     #[default]
@@ -36,21 +34,25 @@ impl NotificationStack {
         Self::default()
     }
 
-    pub fn cleanup(&mut self) {
+    // creates a new notification on the stack
+    // with the defined duration in the notification
+    pub fn push_notification(&mut self, notification: Notification) {
+        self.notifications.push(notification);
+    }
+
+    // returns a boolean value indicating if the stack is empty
+    pub fn is_empty(&self) -> bool {
+        self.notifications.is_empty()
+    }
+
+    // remove notification from stack which duration time exceeded
+    fn remove_timedout_notifications(&mut self) {
         self.notifications = self
             .notifications
             .iter()
             .filter(|n| n.should_be_displayed())
             .cloned()
             .collect();
-    }
-
-    pub fn push_notification(&mut self, notification: Notification) {
-        self.notifications.push(notification);
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.notifications.is_empty()
     }
 }
 
@@ -70,6 +72,8 @@ impl Notification {
         }
     }
 
+    // boolean value indicating if the notification
+    // duration was exceeded
     pub fn should_be_displayed(&self) -> bool {
         let now = Instant::now();
         match now.checked_duration_since(self.initilized_time) {
@@ -77,22 +81,35 @@ impl Notification {
             None => false,
         }
     }
+
+    // returns the area with minimum required width
+    fn limit_area_width(&self, area: Rect) -> Rect {
+        Layout::horizontal([
+            Constraint::Fill(1),
+            Constraint::Length((self.content.len() + 4) as u16),
+        ])
+        .split(area)[1]
+    }
 }
 
-impl Widget for &NotificationStack {
+impl Widget for &mut NotificationStack {
     fn render(self, area: Rect, buf: &mut Buffer)
     where
         Self: Sized,
     {
+        self.remove_timedout_notifications();
         if self.is_empty() {
             return;
         }
 
-        let areas =
-            Layout::vertical([Constraint::Ratio(1, MAX_NOTIFICATIONS); MAX_NOTIFICATIONS as usize])
-                .vertical_margin(1)
-                .horizontal_margin(3)
-                .split(area);
+        let max_notifications = area.height / 3;
+        let mut constraints = Vec::new();
+
+        for _ in 0..max_notifications {
+            constraints.push(Constraint::Ratio(1, max_notifications as u32));
+        }
+
+        let areas = Layout::vertical(constraints).split(area);
         for (area, notification) in zip(areas.iter(), &self.notifications[0..]) {
             notification.render(*area, buf);
         }
@@ -104,22 +121,21 @@ impl Widget for &Notification {
     where
         Self: Sized,
     {
-        let box_border_style = match self.level {
-            NotificationLevel::Info => Style::default().light_blue(),
-            NotificationLevel::Warn => Style::default().light_yellow(),
-            NotificationLevel::Error => Style::default().light_red(),
-        };
+        let area = self.limit_area_width(area);
+        let p = Paragraph::new(self.content.clone()).block(
+            Block::bordered()
+                .border_type(ratatui::widgets::BorderType::Thick)
+                .title(self.title.clone())
+                .border_style(match self.level {
+                    NotificationLevel::Info => Style::default().light_blue(),
+                    NotificationLevel::Warn => Style::default().light_yellow(),
+                    NotificationLevel::Error => Style::default().light_red(),
+                })
+                .white()
+                .on_black(),
+        );
 
         Widget::render(Clear, area, buf);
-        Paragraph::new(self.content.clone())
-            .block(
-                Block::bordered()
-                    .border_type(ratatui::widgets::BorderType::Rounded)
-                    .title(self.title.clone())
-                    .border_style(box_border_style)
-                    .white()
-                    .on_black(),
-            )
-            .render(area, buf);
+        p.render(area, buf);
     }
 }

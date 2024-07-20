@@ -1,5 +1,4 @@
 mod app;
-mod utils;
 mod widgets;
 use app::Application;
 
