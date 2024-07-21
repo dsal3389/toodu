@@ -131,11 +131,16 @@ impl Application {
     }
 
     fn render_list_view(&mut self, area: Rect, buf: &mut Buffer) {
-        let [list_area, content_area] =
-            Layout::vertical([Constraint::Percentage(50), Constraint::Percentage(50)]).areas(area);
+        let [list_area, content_area, controls_area] = Layout::vertical([
+            Constraint::Percentage(50),
+            Constraint::Percentage(50),
+            Constraint::Length(1),
+        ])
+        .areas(area);
 
         self.todo_list.render(list_area, buf);
         self.render_todo_item_content(content_area, buf);
+        self.render_controls(controls_area, buf);
     }
 
     fn render_item_add_view(&mut self, area: Rect, buf: &mut Buffer) {}
@@ -160,11 +165,49 @@ impl Application {
                     .render(inner_area, buf);
             }
             None => {
-                CenteredText::new("hello world it is indeed".into())
-                    .block(block)
-                    .render(area, buf);
+                CenteredText::new(
+                    Text::from("scroll on some tasks to view thier content here").cyan(),
+                )
+                .block(block)
+                .render(area, buf);
             }
         }
+    }
+
+    fn render_controls(&mut self, area: Rect, buf: &mut Buffer) {
+        #[macro_export]
+        macro_rules! key_spans {
+            ($( $key:expr, $description:expr ),*) => {
+                vec![
+                    $(
+                        Span::from(format!(" {} - {} ", $key, $description)),
+                        Span::from("|").black(),
+                    )*
+                ]
+            }
+        }
+
+        match self.view {
+            ApplicationView::TodoListView => {
+                Line::from(key_spans!(
+                    "k/j",
+                    "UP/DN",
+                    "TAB/Enter",
+                    "toggle task status",
+                    "n",
+                    "new task",
+                    "d/DEL",
+                    "delete task",
+                    "q/esc",
+                    "quit"
+                ))
+                .black()
+                .on_white()
+                .bold()
+                .render(area, buf);
+            }
+            ApplicationView::TodoItemAdd => {}
+        };
     }
 }
 
