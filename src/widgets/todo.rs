@@ -1,4 +1,3 @@
-use anyhow::Context;
 use ratatui::{
     prelude::*,
     widgets::{Block, List, ListItem, ListState, Widget},
@@ -60,15 +59,15 @@ impl TodoList {
         None
     }
 
-    pub fn select_prev(&mut self) {
+    pub fn prev(&mut self) {
         self.widget_state.select_previous();
     }
 
-    pub fn select_next(&mut self) {
+    pub fn next(&mut self) {
         self.widget_state.select_next();
     }
 
-    pub fn add_todo_item(&mut self, item: TodoItem) {
+    pub fn add(&mut self, item: TodoItem) {
         self.items.push(item);
     }
 

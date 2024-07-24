@@ -1,6 +1,6 @@
 use ratatui::{
     prelude::*,
-    widgets::{Block, Clear, Paragraph, Widget},
+    widgets::{Block, Clear, Padding, Paragraph, Widget},
 };
 use std::{
     iter::zip,
@@ -30,10 +30,6 @@ pub struct NotificationStack {
 }
 
 impl NotificationStack {
-    pub fn new() -> Self {
-        Self::default()
-    }
-
     // creates a new notification on the stack
     // with the defined duration in the notification
     pub fn push_notification(&mut self, notification: Notification) {
@@ -86,7 +82,7 @@ impl Notification {
     fn limit_area_width(&self, area: Rect) -> Rect {
         Layout::horizontal([
             Constraint::Fill(1),
-            Constraint::Length((self.content.len() + 4) as u16),
+            Constraint::Length((self.content.len() + 5) as u16),
         ])
         .split(area)[1]
     }
@@ -110,7 +106,7 @@ impl Widget for &mut NotificationStack {
         }
 
         let areas = Layout::vertical(constraints).split(area);
-        for (area, notification) in zip(areas.iter(), &self.notifications[0..]) {
+        for (area, notification) in zip(areas.iter(), &self.notifications) {
             notification.render(*area, buf);
         }
     }
@@ -122,20 +118,21 @@ impl Widget for &Notification {
         Self: Sized,
     {
         let area = self.limit_area_width(area);
-        let p = Paragraph::new(self.content.clone()).block(
-            Block::bordered()
-                .border_type(ratatui::widgets::BorderType::Thick)
-                .title(self.title.clone())
-                .border_style(match self.level {
-                    NotificationLevel::Info => Style::default().light_blue(),
-                    NotificationLevel::Warn => Style::default().light_yellow(),
-                    NotificationLevel::Error => Style::default().light_red(),
-                })
-                .white()
-                .on_black(),
-        );
-
         Widget::render(Clear, area, buf);
-        p.render(area, buf);
+        Paragraph::new(self.content.clone())
+            .block(
+                Block::bordered()
+                    .border_type(ratatui::widgets::BorderType::Thick)
+                    .title(self.title.clone())
+                    .padding(Padding::left(1))
+                    .border_style(match self.level {
+                        NotificationLevel::Info => Style::default().light_blue(),
+                        NotificationLevel::Warn => Style::default().light_yellow(),
+                        NotificationLevel::Error => Style::default().light_red(),
+                    })
+                    .white()
+                    .on_black(),
+            )
+            .render(area, buf);
     }
 }

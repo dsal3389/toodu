@@ -1,4 +1,5 @@
 mod centered;
+mod input;
 mod notification;
 mod todo;
 
