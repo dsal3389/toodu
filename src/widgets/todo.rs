@@ -53,7 +53,7 @@ impl TodoItem {
 
 impl TodoList {
     pub fn selected(&self) -> Option<&TodoItem> {
-        if let Some(i) = self.widget_state.selected() {
+        if let Some(i) = self.selected_index() {
             return Some(&self.items[i]);
         }
         None
@@ -71,25 +71,36 @@ impl TodoList {
         self.items.push(item);
     }
 
-    pub fn delete_selected(&mut self) -> Option<TodoItem> {
-        if let Some(i) = self.widget_state.selected() {
+    pub fn delete_current(&mut self) -> Option<TodoItem> {
+        if let Some(i) = self.selected_index() {
             return Some(self.items.remove(i));
         }
         None
     }
 
-    pub fn toggle_current_item_status(&mut self) {
-        if let Some(i) = self.widget_state.selected() {
+    pub fn toggle_current_status(&mut self) {
+        if let Some(i) = self.selected_index() {
             let item = &mut self.items[i];
             item.toggle_status();
         }
     }
 
-    fn empty_todo_list_view(&self, area: Rect, buf: &mut Buffer) {
+    fn is_empty(&self) -> bool {
+        self.items.is_empty()
+    }
+
+    fn selected_index(&self) -> Option<usize> {
+        match self.widget_state.selected() {
+            Some(i) if !self.is_empty() => Some(i),
+            _ => None,
+        }
+    }
+
+    fn render_empty_todo_list(&self, area: Rect, buf: &mut Buffer) {
         CenteredText::new("Hello world".into()).render(area, buf);
     }
 
-    fn todo_list_view(&mut self, area: Rect, buf: &mut Buffer) {
+    fn render_todo_list(&mut self, area: Rect, buf: &mut Buffer) {
         let items = self.items.iter().enumerate().map(|(i, item)| {
             let prefix = match item.status() {
                 TodoItemStatus::InProgress => {
@@ -99,6 +110,7 @@ impl TodoList {
                     Span::styled("complete   ", Style::default().light_green())
                 }
             };
+
             let item_line = Line::from(vec![
                 prefix,
                 Span::from(" | "),
@@ -129,9 +141,9 @@ impl Widget for &mut TodoList {
         Self: Sized,
     {
         if self.items.is_empty() {
-            self.empty_todo_list_view(area, buf);
+            self.render_empty_todo_list(area, buf);
         } else {
-            self.todo_list_view(area, buf);
+            self.render_todo_list(area, buf);
         }
     }
 }

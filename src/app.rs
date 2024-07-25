@@ -76,15 +76,15 @@ impl Application {
     }
 
     fn handle_key_event(&mut self, key: KeyCode) {
-        match self.view {
-            ApplicationView::TodoListView => match key {
-                KeyCode::Char('n') => self.view = ApplicationView::TodoItemAdd,
-                KeyCode::Char('q') | KeyCode::Esc => self.running_state = ApplicationState::Exiting,
-                _ => {
-                    ListView::new(&mut self.notifications, &mut self.todo_list).view_event_key(key);
+        match key {
+            KeyCode::Char('n') => self.view = ApplicationView::TodoItemAdd,
+            KeyCode::Char('q') | KeyCode::Esc => self.running_state = ApplicationState::Exiting,
+            _ => match self.view {
+                ApplicationView::TodoListView => {
+                    ListView::new(&mut self.notifications, &mut self.todo_list).view_event_key(key)
                 }
+                ApplicationView::TodoItemAdd => {}
             },
-            ApplicationView::TodoItemAdd => {}
         }
     }
 }

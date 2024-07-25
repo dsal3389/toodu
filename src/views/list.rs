@@ -76,7 +76,7 @@ impl<'a> View for ListView<'a> {
             KeyCode::Char('j') | KeyCode::Down => self.todo_list.next(),
             KeyCode::Char('k') | KeyCode::Up => self.todo_list.prev(),
             KeyCode::Char('d') | KeyCode::Delete => {
-                if let Some(item) = self.todo_list.delete_selected() {
+                if let Some(item) = self.todo_list.delete_current() {
                     self.notification_stack
                         .borrow_mut()
                         .push_notification(Notification::new(
@@ -91,7 +91,7 @@ impl<'a> View for ListView<'a> {
                         ));
                 }
             }
-            KeyCode::Enter | KeyCode::Tab => self.todo_list.toggle_current_item_status(),
+            KeyCode::Enter | KeyCode::Tab => self.todo_list.toggle_current_status(),
             _ => {}
         };
     }
