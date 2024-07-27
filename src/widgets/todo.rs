@@ -85,6 +85,7 @@ impl TodoList {
         }
     }
 
+    #[inline]
     fn is_empty(&self) -> bool {
         self.items.is_empty()
     }
@@ -97,7 +98,9 @@ impl TodoList {
     }
 
     fn render_empty_todo_list(&self, area: Rect, buf: &mut Buffer) {
-        CenteredText::new("Hello world".into()).render(area, buf);
+        CenteredText::new(Text::from("Todo list empty").cyan())
+            .block(Block::default().white().on_black())
+            .render(area, buf);
     }
 
     fn render_todo_list(&mut self, area: Rect, buf: &mut Buffer) {
@@ -140,7 +143,7 @@ impl Widget for &mut TodoList {
     where
         Self: Sized,
     {
-        if self.items.is_empty() {
+        if self.is_empty() {
             self.render_empty_todo_list(area, buf);
         } else {
             self.render_todo_list(area, buf);
