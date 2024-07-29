@@ -6,6 +6,7 @@ use ratatui::{
 #[derive(Default)]
 pub struct Input {
     value: String,
+    cursor_index: usize,
     focused: bool,
 }
 
@@ -19,7 +20,7 @@ impl Input {
     }
 }
 
-impl Widget for Input {
+impl Widget for &Input {
     fn render(self, area: Rect, buf: &mut Buffer)
     where
         Self: Sized,
@@ -30,7 +31,7 @@ impl Widget for Input {
             Style::new().white()
         };
 
-        Paragraph::new(self.value)
+        Paragraph::new(self.value.clone())
             .block(
                 Block::bordered()
                     .title("input")

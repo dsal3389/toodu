@@ -3,27 +3,26 @@ use ratatui::{
     prelude::*,
     widgets::{Block, Borders, Padding, Paragraph},
 };
-use std::{borrow::BorrowMut, time::Duration};
+use std::time::Duration;
 
 use super::View;
-use crate::widgets::{CenteredText, Notification, NotificationLevel, NotificationStack, TodoList};
+use crate::{
+    app::ApplicationState,
+    widgets::{CenteredText, Notification, NotificationLevel},
+};
 
 pub struct ListView<'a> {
-    notification_stack: &'a mut NotificationStack,
-    todo_list: &'a mut TodoList,
+    app_state: &'a mut ApplicationState,
 }
 
 impl<'a> ListView<'a> {
-    pub fn new(notification_stack: &'a mut NotificationStack, todo_list: &'a mut TodoList) -> Self {
-        Self {
-            notification_stack,
-            todo_list,
-        }
+    pub fn new(app_state: &'a mut ApplicationState) -> Self {
+        Self { app_state }
     }
 
     fn render_todo_item_content(&mut self, area: Rect, buf: &mut Buffer) {
         let block = Block::default().borders(Borders::TOP).white().on_black();
-        match self.todo_list.selected() {
+        match self.app_state.todo_list.selected() {
             Some(item) => {
                 let inner_block = Block::bordered()
                     .padding(Padding::horizontal(1))
@@ -73,12 +72,12 @@ impl<'a> ListView<'a> {
 impl<'a> View for ListView<'a> {
     fn view_event_key(&mut self, key: KeyCode) {
         match key {
-            KeyCode::Char('j') | KeyCode::Down => self.todo_list.next(),
-            KeyCode::Char('k') | KeyCode::Up => self.todo_list.prev(),
+            KeyCode::Char('j') | KeyCode::Down => self.app_state.todo_list.next(),
+            KeyCode::Char('k') | KeyCode::Up => self.app_state.todo_list.prev(),
             KeyCode::Char('d') | KeyCode::Delete => {
-                if let Some(item) = self.todo_list.delete_current() {
-                    self.notification_stack
-                        .borrow_mut()
+                if let Some(item) = self.app_state.todo_list.delete_current() {
+                    self.app_state
+                        .notifications
                         .push_notification(Notification::new(
                             " deleted item ".into(),
                             format!(
@@ -91,7 +90,7 @@ impl<'a> View for ListView<'a> {
                         ));
                 }
             }
-            KeyCode::Enter | KeyCode::Tab => self.todo_list.toggle_current_status(),
+            KeyCode::Enter | KeyCode::Tab => self.app_state.todo_list.toggle_current_status(),
             _ => {}
         };
     }
@@ -105,7 +104,7 @@ impl<'a> View for ListView<'a> {
         ])
         .areas(area);
 
-        self.todo_list.render(list_area, buf);
+        self.app_state.todo_list.render(list_area, buf);
         self.render_todo_item_content(content_area, buf);
         self.render_controls_line(controls_area, buf);
     }

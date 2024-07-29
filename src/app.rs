@@ -13,7 +13,7 @@ use crate::{
 };
 
 #[derive(Default, PartialEq)]
-pub enum ApplicationState {
+pub enum ApplicationRunningState {
     #[default]
     Running,
     Exiting,
@@ -27,35 +27,48 @@ pub enum ApplicationView {
 }
 
 #[derive(Default)]
+pub struct ApplicationState {
+    pub view: ApplicationView,
+    pub running_state: ApplicationRunningState,
+    pub notifications: NotificationStack,
+    pub todo_list: TodoList,
+}
+
+#[derive(Default)]
 pub struct Application {
-    view: ApplicationView,
-    running_state: ApplicationState,
-    notifications: NotificationStack,
-    todo_list: TodoList,
+    state: ApplicationState,
 }
 
 impl Application {
     pub fn load_data(&mut self) {
-        self.todo_list
+        self.state
+            .todo_list
             .add(TodoItem::new("hello world".into(), "description 1".into()));
-        self.todo_list
+        self.state
+            .todo_list
             .add(TodoItem::new("hello world".into(), "description 1".into()));
-        self.todo_list
+        self.state
+            .todo_list
             .add(TodoItem::new("hello world".into(), "description 1".into()));
-        self.todo_list
+        self.state
+            .todo_list
             .add(TodoItem::new("hello world".into(), "description 1".into()));
-        self.todo_list
+        self.state
+            .todo_list
             .add(TodoItem::new("hello world".into(), "description 1".into()));
-        self.todo_list
+        self.state
+            .todo_list
             .add(TodoItem::new("hello world".into(), "description 1".into()));
-        self.todo_list
+        self.state
+            .todo_list
             .add(TodoItem::new("hello world".into(), "description 1".into()));
-        self.todo_list
+        self.state
+            .todo_list
             .add(TodoItem::new("hello world".into(), "description 1".into()));
     }
 
     pub fn run(&mut self, mut terminal: Terminal<impl Backend>) -> anyhow::Result<()> {
-        while self.running_state != ApplicationState::Exiting {
+        while self.state.running_state != ApplicationRunningState::Exiting {
             terminal
                 .draw(|f| f.render_widget(&mut *self, f.size()))
                 .context("couldn't draw new frame to terminal screen")?;
@@ -77,13 +90,15 @@ impl Application {
 
     fn handle_key_event(&mut self, key: KeyCode) {
         match key {
-            KeyCode::Char('n') => self.view = ApplicationView::TodoItemAdd,
-            KeyCode::Char('q') | KeyCode::Esc => self.running_state = ApplicationState::Exiting,
-            _ => match self.view {
-                ApplicationView::TodoListView => {
-                    ListView::new(&mut self.notifications, &mut self.todo_list).view_event_key(key)
+            KeyCode::Char('n') => self.state.view = ApplicationView::TodoItemAdd,
+            KeyCode::Char('q') | KeyCode::Esc => {
+                self.state.running_state = ApplicationRunningState::Exiting
+            }
+            _ => match self.state.view {
+                ApplicationView::TodoListView => ListView::new(&mut self.state).view_event_key(key),
+                ApplicationView::TodoItemAdd => {
+                    NewTaskView::new(&mut self.state).view_event_key(key)
                 }
-                ApplicationView::TodoItemAdd => {}
             },
         }
     }
@@ -94,15 +109,13 @@ impl Widget for &mut Application {
     where
         Self: Sized,
     {
-        match self.view {
-            ApplicationView::TodoListView => {
-                ListView::new(&mut self.notifications, &mut self.todo_list).render(area, buf)
-            }
-            ApplicationView::TodoItemAdd => NewTaskView.render(area, buf),
+        match self.state.view {
+            ApplicationView::TodoListView => ListView::new(&mut self.state).render(area, buf),
+            ApplicationView::TodoItemAdd => NewTaskView::new(&mut self.state).render(area, buf),
         }
 
-        if !self.notifications.is_empty() {
-            self.notifications.render(area, buf);
+        if !self.state.notifications.is_empty() {
+            self.state.notifications.render(area, buf);
         }
     }
 }
