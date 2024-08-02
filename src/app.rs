@@ -20,15 +20,7 @@ pub enum ApplicationRunningState {
 }
 
 #[derive(Default)]
-pub enum ApplicationView {
-    #[default]
-    TodoListView,
-    TodoItemAdd,
-}
-
-#[derive(Default)]
 pub struct ApplicationState {
-    pub view: ApplicationView,
     pub running_state: ApplicationRunningState,
     pub notifications: NotificationStack,
     pub todo_list: TodoList,
@@ -50,13 +42,14 @@ impl Application {
         let mut state = self.state.borrow_mut();
         state
             .todo_list
-            .add(TodoItem::new("hello world".into(), "description 1".into()));
+            .add(TodoItem::new("s".into(), "description 1".into()));
+        state.todo_list.add(TodoItem::new(
+            "fadfda fdf ea".into(),
+            "description 1".into(),
+        ));
         state
             .todo_list
-            .add(TodoItem::new("hello world".into(), "description 1".into()));
-        state
-            .todo_list
-            .add(TodoItem::new("hello world".into(), "description 1".into()));
+            .add(TodoItem::new("hello".into(), "description 1".into()));
         state
             .todo_list
             .add(TodoItem::new("hello world".into(), "description 1".into()));
@@ -97,7 +90,12 @@ impl Application {
 
     fn handle_key_event(&mut self, key: KeyCode) {
         match key {
-            KeyCode::Char('n') => (*self.state.borrow_mut()).view = ApplicationView::TodoItemAdd,
+            KeyCode::Char('n') => {
+                self.current_view = Some(Box::new(NewTaskView::new(Rc::clone(&self.state))));
+            }
+            KeyCode::Char('l') => {
+                self.current_view = Some(Box::new(ListView::new(Rc::clone(&self.state))));
+            }
             KeyCode::Char('q') | KeyCode::Esc => {
                 self.state.borrow_mut().running_state = ApplicationRunningState::Exiting
             }

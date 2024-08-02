@@ -92,7 +92,7 @@ impl TodoList {
 
     fn selected_index(&self) -> Option<usize> {
         match self.widget_state.selected() {
-            Some(i) if !self.is_empty() => Some(i),
+            Some(i) if !self.is_empty() && i < self.items.len() => Some(i),
             _ => None,
         }
     }

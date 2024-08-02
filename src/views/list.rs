@@ -85,7 +85,7 @@ impl View for ListView {
                             item.title(),
                             item.status()
                         ),
-                        Duration::from_secs(7),
+                        Duration::from_secs(5),
                         NotificationLevel::Warn,
                     ));
                 }

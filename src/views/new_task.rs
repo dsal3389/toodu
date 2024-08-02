@@ -1,16 +1,17 @@
 use ratatui::{crossterm::event::KeyCode, prelude::*, widgets::Widget};
+use std::{cell::RefCell, rc::Rc};
 
 use super::View;
 use crate::{app::ApplicationState, widgets::Input};
 
-pub struct NewTaskView<'a> {
+pub struct NewTaskView {
     title: Input,
     description: Input,
-    app_state: &'a ApplicationState,
+    app_state: Rc<RefCell<ApplicationState>>,
 }
 
-impl<'a> NewTaskView<'a> {
-    pub fn new(app_state: &'a mut ApplicationState) -> Self {
+impl NewTaskView {
+    pub fn new(app_state: Rc<RefCell<ApplicationState>>) -> Self {
         Self {
             title: Input::new(),
             description: Input::new(),
@@ -19,7 +20,7 @@ impl<'a> NewTaskView<'a> {
     }
 }
 
-impl<'a> View for NewTaskView<'a> {
+impl View for NewTaskView {
     fn view_event_key(&mut self, key: KeyCode) {
         match key {
             KeyCode::Char('i') => {
@@ -31,14 +32,5 @@ impl<'a> View for NewTaskView<'a> {
 
     fn render_view(&mut self, area: Rect, buf: &mut Buffer) {
         self.title.render(area, buf);
-    }
-}
-
-impl<'a> Widget for NewTaskView<'a> {
-    fn render(mut self, area: ratatui::prelude::Rect, buf: &mut ratatui::prelude::Buffer)
-    where
-        Self: Sized,
-    {
-        self.render_view(area, buf);
     }
 }
