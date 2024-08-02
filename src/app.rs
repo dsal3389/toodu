@@ -5,7 +5,7 @@ use ratatui::{
     widgets::Widget,
     Terminal,
 };
-use std::time::Duration;
+use std::{cell::RefCell, rc::Rc, time::Duration};
 
 use crate::{
     views::{ListView, NewTaskView, View},
@@ -36,39 +36,46 @@ pub struct ApplicationState {
 
 #[derive(Default)]
 pub struct Application {
-    state: ApplicationState,
+    state: Rc<RefCell<ApplicationState>>,
+    current_view: Option<Box<dyn View>>,
 }
 
 impl Application {
-    pub fn load_data(&mut self) {
-        self.state
+    pub fn init(&mut self) {
+        self.load_data();
+        self.current_view = Some(Box::new(ListView::new(Rc::clone(&self.state))));
+    }
+
+    pub fn load_data(&self) {
+        let mut state = self.state.borrow_mut();
+        state
             .todo_list
             .add(TodoItem::new("hello world".into(), "description 1".into()));
-        self.state
+        state
             .todo_list
             .add(TodoItem::new("hello world".into(), "description 1".into()));
-        self.state
+        state
             .todo_list
             .add(TodoItem::new("hello world".into(), "description 1".into()));
-        self.state
+        state
             .todo_list
             .add(TodoItem::new("hello world".into(), "description 1".into()));
-        self.state
+        state
             .todo_list
             .add(TodoItem::new("hello world".into(), "description 1".into()));
-        self.state
+        state
             .todo_list
             .add(TodoItem::new("hello world".into(), "description 1".into()));
-        self.state
+        state
             .todo_list
             .add(TodoItem::new("hello world".into(), "description 1".into()));
-        self.state
+        state
             .todo_list
             .add(TodoItem::new("hello world".into(), "description 1".into()));
     }
 
     pub fn run(&mut self, mut terminal: Terminal<impl Backend>) -> anyhow::Result<()> {
-        while self.state.running_state != ApplicationRunningState::Exiting {
+        while self.state.borrow().running_state != ApplicationRunningState::Exiting {
             terminal
                 .draw(|f| f.render_widget(&mut *self, f.size()))
                 .context("couldn't draw new frame to terminal screen")?;
@@ -90,15 +97,15 @@ impl Application {
 
     fn handle_key_event(&mut self, key: KeyCode) {
         match key {
-            KeyCode::Char('n') => self.state.view = ApplicationView::TodoItemAdd,
+            KeyCode::Char('n') => (*self.state.borrow_mut()).view = ApplicationView::TodoItemAdd,
             KeyCode::Char('q') | KeyCode::Esc => {
-                self.state.running_state = ApplicationRunningState::Exiting
+                self.state.borrow_mut().running_state = ApplicationRunningState::Exiting
             }
-            _ => match self.state.view {
-                ApplicationView::TodoListView => ListView::new(&mut self.state).view_event_key(key),
-                ApplicationView::TodoItemAdd => {
-                    NewTaskView::new(&mut self.state).view_event_key(key)
+            _ => match &mut self.current_view {
+                Some(v) => {
+                    v.view_event_key(key);
                 }
+                None => {}
             },
         }
     }
@@ -109,13 +116,13 @@ impl Widget for &mut Application {
     where
         Self: Sized,
     {
-        match self.state.view {
-            ApplicationView::TodoListView => ListView::new(&mut self.state).render(area, buf),
-            ApplicationView::TodoItemAdd => NewTaskView::new(&mut self.state).render(area, buf),
+        match &mut self.current_view {
+            Some(v) => v.render_view(area, buf),
+            None => {}
         }
 
-        if !self.state.notifications.is_empty() {
-            self.state.notifications.render(area, buf);
+        if !self.state.borrow().notifications.is_empty() {
+            self.state.borrow_mut().notifications.render(area, buf);
         }
     }
 }

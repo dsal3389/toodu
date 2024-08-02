@@ -3,7 +3,7 @@ use ratatui::{
     prelude::*,
     widgets::{Block, Borders, Padding, Paragraph},
 };
-use std::time::Duration;
+use std::{cell::RefCell, rc::Rc, time::Duration};
 
 use super::View;
 use crate::{
@@ -11,18 +11,18 @@ use crate::{
     widgets::{CenteredText, Notification, NotificationLevel},
 };
 
-pub struct ListView<'a> {
-    app_state: &'a mut ApplicationState,
+pub struct ListView {
+    app_state: Rc<RefCell<ApplicationState>>,
 }
 
-impl<'a> ListView<'a> {
-    pub fn new(app_state: &'a mut ApplicationState) -> Self {
+impl ListView {
+    pub fn new(app_state: Rc<RefCell<ApplicationState>>) -> Self {
         Self { app_state }
     }
 
-    fn render_todo_item_content(&mut self, area: Rect, buf: &mut Buffer) {
+    fn render_todo_item_content(&self, area: Rect, buf: &mut Buffer) {
         let block = Block::default().borders(Borders::TOP).white().on_black();
-        match self.app_state.todo_list.selected() {
+        match self.app_state.borrow().todo_list.selected() {
             Some(item) => {
                 let inner_block = Block::bordered()
                     .padding(Padding::horizontal(1))
@@ -49,7 +49,7 @@ impl<'a> ListView<'a> {
         }
     }
 
-    fn render_controls_line(&mut self, area: Rect, buf: &mut Buffer) {
+    fn render_controls_line(&self, area: Rect, buf: &mut Buffer) {
         Line::from(key_spans!(
             "k/j",
             "UP/DN",
@@ -69,28 +69,28 @@ impl<'a> ListView<'a> {
     }
 }
 
-impl<'a> View for ListView<'a> {
+impl View for ListView {
     fn view_event_key(&mut self, key: KeyCode) {
+        let mut state = self.app_state.borrow_mut();
+
         match key {
-            KeyCode::Char('j') | KeyCode::Down => self.app_state.todo_list.next(),
-            KeyCode::Char('k') | KeyCode::Up => self.app_state.todo_list.prev(),
+            KeyCode::Char('j') | KeyCode::Down => state.todo_list.next(),
+            KeyCode::Char('k') | KeyCode::Up => state.todo_list.prev(),
             KeyCode::Char('d') | KeyCode::Delete => {
-                if let Some(item) = self.app_state.todo_list.delete_current() {
-                    self.app_state
-                        .notifications
-                        .push_notification(Notification::new(
-                            " deleted item ".into(),
-                            format!(
-                                "deleted item `{}` from todo list with status {}",
-                                item.title(),
-                                item.status()
-                            ),
-                            Duration::from_secs(7),
-                            NotificationLevel::Warn,
-                        ));
+                if let Some(item) = state.todo_list.delete_current() {
+                    state.notifications.push_notification(Notification::new(
+                        " deleted item ".into(),
+                        format!(
+                            "deleted item `{}` from todo list with status {}",
+                            item.title(),
+                            item.status()
+                        ),
+                        Duration::from_secs(7),
+                        NotificationLevel::Warn,
+                    ));
                 }
             }
-            KeyCode::Enter | KeyCode::Tab => self.app_state.todo_list.toggle_current_status(),
+            KeyCode::Enter | KeyCode::Tab => state.todo_list.toggle_current_status(),
             _ => {}
         };
     }
@@ -104,17 +104,8 @@ impl<'a> View for ListView<'a> {
         ])
         .areas(area);
 
-        self.app_state.todo_list.render(list_area, buf);
-        self.render_todo_item_content(content_area, buf);
         self.render_controls_line(controls_area, buf);
-    }
-}
-
-impl<'a> Widget for ListView<'a> {
-    fn render(mut self, area: Rect, buf: &mut Buffer)
-    where
-        Self: Sized,
-    {
-        self.render_view(area, buf);
+        self.render_todo_item_content(content_area, buf);
+        self.app_state.borrow_mut().todo_list.render(list_area, buf);
     }
 }

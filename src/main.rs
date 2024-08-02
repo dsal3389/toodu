@@ -37,7 +37,7 @@ fn main() -> anyhow::Result<()> {
     let terminal = tui::load_terminal()?;
     let mut application = Application::default();
 
-    application.load_data();
+    application.init();
     application.run(terminal)?;
     tui::restore_terminal()?;
     Ok(())

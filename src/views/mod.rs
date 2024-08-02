@@ -1,4 +1,4 @@
-use ratatui::{crossterm::event::KeyCode, prelude::*, widgets::Widget};
+use ratatui::{crossterm::event::KeyCode, prelude::*};
 
 #[macro_export]
 macro_rules! key_spans {
@@ -12,7 +12,7 @@ macro_rules! key_spans {
     }
 }
 
-pub trait View: Widget {
+pub trait View {
     fn view_event_key(&mut self, key: KeyCode);
 
     fn render_view(&mut self, area: Rect, buf: &mut Buffer);
