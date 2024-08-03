@@ -19,8 +19,16 @@ pub enum ApplicationRunningState {
     Exiting,
 }
 
+#[derive(Default, PartialEq)]
+pub enum ApplicationMode {
+    #[default]
+    Normal,
+    Writing,
+}
+
 #[derive(Default)]
 pub struct ApplicationState {
+    pub mode: ApplicationMode,
     pub running_state: ApplicationRunningState,
     pub notifications: NotificationStack,
     pub todo_list: TodoList,
@@ -89,23 +97,45 @@ impl Application {
     }
 
     fn handle_key_event(&mut self, key: KeyCode) {
+        // lathough it would be logical to first
+        // match the `self.state.mode` and based on the mode go to different
+        // handlers like so
+        //
+        // ```
+        // match self.state.borrow().mode {
+        //     ApplicationMode::Normal => {
+        //         // handle `n`, `q`, `l`
+        //     },
+        //     ApplicationMode::Writing => {
+        //         // handle other keys
+        //     }
+        // }
+        // ```
+        //
+        // it is not possible since we do `self.state.borrow()` and in the key events we need
+        // to mutate the state, like in `q` we need to call `borrow_mut` and mutate the
+        // `running_state`, but we can't `borrow_mut` because our `self.state.borrow` is still
+        // alive and will crash the program, thats why I have this ugly ass solution with if
+        // matches
         match key {
-            KeyCode::Char('n') => {
+            KeyCode::Char('n') if self.state.borrow().mode == ApplicationMode::Normal => {
                 self.current_view = Some(Box::new(NewTaskView::new(Rc::clone(&self.state))));
             }
-            KeyCode::Char('l') => {
+            KeyCode::Char('l') if self.state.borrow().mode == ApplicationMode::Normal => {
                 self.current_view = Some(Box::new(ListView::new(Rc::clone(&self.state))));
             }
-            KeyCode::Char('q') | KeyCode::Esc => {
+            KeyCode::Char('q') | KeyCode::Esc
+                if self.state.borrow().mode == ApplicationMode::Normal =>
+            {
                 self.state.borrow_mut().running_state = ApplicationRunningState::Exiting
             }
             _ => match &mut self.current_view {
                 Some(v) => {
                     v.view_event_key(key);
                 }
-                None => {}
+                _ => {}
             },
-        }
+        };
     }
 }
 
@@ -116,7 +146,7 @@ impl Widget for &mut Application {
     {
         match &mut self.current_view {
             Some(v) => v.render_view(area, buf),
-            None => {}
+            None => panic!("application `run` is called before setting the `current_view`"),
         }
 
         if !self.state.borrow().notifications.is_empty() {

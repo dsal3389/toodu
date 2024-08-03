@@ -11,10 +11,6 @@ pub struct Input {
 }
 
 impl Input {
-    pub fn new() -> Self {
-        Self::default()
-    }
-
     pub fn focused(&self) -> bool {
         self.focused
     }

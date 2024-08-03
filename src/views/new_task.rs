@@ -2,7 +2,10 @@ use ratatui::{crossterm::event::KeyCode, prelude::*, widgets::Widget};
 use std::{cell::RefCell, rc::Rc};
 
 use super::View;
-use crate::{app::ApplicationState, widgets::Input};
+use crate::{
+    app::{ApplicationMode, ApplicationState},
+    widgets::Input,
+};
 
 pub struct NewTaskView {
     title: Input,
@@ -13,8 +16,8 @@ pub struct NewTaskView {
 impl NewTaskView {
     pub fn new(app_state: Rc<RefCell<ApplicationState>>) -> Self {
         Self {
-            title: Input::new(),
-            description: Input::new(),
+            title: Input::default(),
+            description: Input::default(),
             app_state,
         }
     }
@@ -23,14 +26,18 @@ impl NewTaskView {
 impl View for NewTaskView {
     fn view_event_key(&mut self, key: KeyCode) {
         match key {
-            KeyCode::Char('i') => {
+            KeyCode::Tab => {
                 self.title.focused();
+                self.app_state.borrow_mut().mode = ApplicationMode::Writing;
             }
             _ => {}
         }
     }
 
     fn render_view(&mut self, area: Rect, buf: &mut Buffer) {
-        self.title.render(area, buf);
+        let [title_area, description_area] =
+            Layout::vertical([Constraint::Length(3), Constraint::Fill(1)]).areas(area);
+        self.title.render(title_area, buf);
+        self.description.render(description_area, buf);
     }
 }

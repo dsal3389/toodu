@@ -59,14 +59,17 @@ impl TodoList {
         None
     }
 
+    #[inline]
     pub fn prev(&mut self) {
         self.widget_state.select_previous();
     }
 
+    #[inline]
     pub fn next(&mut self) {
         self.widget_state.select_next();
     }
 
+    #[inline]
     pub fn add(&mut self, item: TodoItem) {
         self.items.push(item);
     }
