@@ -27,7 +27,7 @@ impl View for NewTaskView {
     fn view_event_key(&mut self, key: KeyCode) {
         match key {
             KeyCode::Tab => {
-                self.title.focused();
+                self.title.toggle_focuse();
                 self.app_state.borrow_mut().mode = ApplicationMode::Writing;
             }
             _ => {}

@@ -48,31 +48,24 @@ impl Application {
 
     pub fn load_data(&self) {
         let mut state = self.state.borrow_mut();
-        state
-            .todo_list
-            .add(TodoItem::new("s".into(), "description 1".into()));
         state.todo_list.add(TodoItem::new(
-            "fadfda fdf ea".into(),
-            "description 1".into(),
+            "hello world".into(),
+            "simple todo task example".into(),
         ));
         state
             .todo_list
-            .add(TodoItem::new("hello".into(), "description 1".into()));
+            .add(TodoItem::new("sleep".into(), "sleep or whatever".into()));
+        state.todo_list.add(TodoItem::new(
+            "buy that X item".into(),
+            "Go to the mall and buy X".into(),
+        ));
         state
             .todo_list
-            .add(TodoItem::new("hello world".into(), "description 1".into()));
-        state
-            .todo_list
-            .add(TodoItem::new("hello world".into(), "description 1".into()));
-        state
-            .todo_list
-            .add(TodoItem::new("hello world".into(), "description 1".into()));
-        state
-            .todo_list
-            .add(TodoItem::new("hello world".into(), "description 1".into()));
-        state
-            .todo_list
-            .add(TodoItem::new("hello world".into(), "description 1".into()));
+            .add(TodoItem::new("test".into(), "test the item".into()));
+        state.todo_list.add(TodoItem::new(
+            "call X".into(),
+            "number: 123-456-7890".into(),
+        ));
     }
 
     pub fn run(&mut self, mut terminal: Terminal<impl Backend>) -> anyhow::Result<()> {

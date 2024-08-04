@@ -3,6 +3,7 @@ use ratatui::{
     widgets::{Block, Padding, Paragraph, Widget},
 };
 
+#[allow(dead_code)]
 #[derive(Default)]
 pub struct Input {
     value: String,
@@ -11,6 +12,9 @@ pub struct Input {
 }
 
 impl Input {
+    pub fn toggle_focuse(&mut self) {
+        self.focused = !self.focused;
+    }
     pub fn focused(&self) -> bool {
         self.focused
     }
